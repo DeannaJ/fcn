@@ -224,17 +224,21 @@ def main(argv=None):
     if FLAGS.debug:
         for var in trainable_var:
             utils.add_to_regularization_and_summary(var)
+    ## 定义损失
     train_op = train(loss, trainable_var)
 
     print("Setting up summary op...")
+    ## 定义合并变量操作，一次性生成所有摘要数据
     summary_op = tf.summary.merge_all()
 
     print("Setting up image reader...")
+    ## 读取训练数据集、验证数据集
     train_records, valid_records = scene_parsing.read_dataset(FLAGS.data_dir)
     print(len(train_records))
     print(len(valid_records))
 
     print("Setting up dataset reader")
+    ## 将训练数据集、验证数据集的格式转换为网络需要的格式
     image_options = {'resize': True, 'resize_size': IMAGE_SIZE}
     if FLAGS.mode == 'train':
         train_dataset_reader = dataset.BatchDatset(train_records, image_options)
@@ -251,6 +255,7 @@ def main(argv=None):
     validation_writer = tf.summary.FileWriter(FLAGS.logs_dir + '/validation')
 
     sess.run(tf.global_variables_initializer())
+    ## 加载之前的checkpoint
     ckpt = tf.train.get_checkpoint_state(FLAGS.logs_dir)
     if ckpt and ckpt.model_checkpoint_path:
         saver.restore(sess, ckpt.model_checkpoint_path)
@@ -258,9 +263,10 @@ def main(argv=None):
 
     if FLAGS.mode == "train":
         for itr in xrange(MAX_ITERATION):
+            ## 读取训练集的一个batch
             train_images, train_annotations = train_dataset_reader.next_batch(FLAGS.batch_size)
             feed_dict = {image: train_images, annotation: train_annotations, keep_probability: 0.85}
-
+            #执行计算损失操作，网络跑起来了
             sess.run(train_op, feed_dict=feed_dict)
 
             if itr % 10 == 0:
